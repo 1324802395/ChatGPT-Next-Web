@@ -89,6 +89,9 @@ import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
+import { message, Dropdown, Space } from "antd";
+import axios from "axios";
+import { DownOutlined, SmileOutlined } from "@ant-design/icons";
 
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
@@ -414,6 +417,7 @@ export function ChatActions(props: {
   const config = useAppConfig();
   const navigate = useNavigate();
   const chatStore = useChatStore();
+  const isAdmin = config.isAdmin;
 
   // switch themes
   const theme = config.theme;
@@ -467,7 +471,7 @@ export function ChatActions(props: {
           icon={<BottomIcon />}
         />
       )}
-      {props.hitBottom && (
+      {props.hitBottom && isAdmin && (
         <ChatAction
           onClick={props.showPromptModal}
           text={Locale.Chat.InputActions.Settings}
@@ -520,11 +524,13 @@ export function ChatActions(props: {
         }}
       />
 
-      <ChatAction
-        onClick={() => setShowModelSelector(true)}
-        text={currentModel}
-        icon={<RobotIcon />}
-      />
+      {isAdmin && (
+        <ChatAction
+          onClick={() => setShowModelSelector(true)}
+          text={currentModel}
+          icon={<RobotIcon />}
+        />
+      )}
 
       {showModelSelector && (
         <Selector
@@ -696,6 +702,28 @@ function _Chat() {
   };
 
   const doSubmit = (userInput: string) => {
+    //发送数据保存日志
+    axios
+      .post(
+        "/spider-gpt/user/recordLog",
+        {
+          displayName: accessStore.userInfo.displayName,
+          content: userInput,
+        },
+        {
+          headers: { token: accessStore.accessToken },
+        },
+      )
+      .then((res) => {
+        if (res.status == 10003) {
+          message.error("登录过期，请重新登录");
+          accessStore.update((access) => {
+            access.accessCode = "";
+            access.accessToken = "";
+            access.userInfo = null;
+          });
+        }
+      });
     if (userInput.trim() === "") return;
     const matchCommand = chatCommands.match(userInput);
     if (matchCommand.matched) {
@@ -1108,6 +1136,49 @@ function _Chat() {
               />
             </div>
           )}
+          <div style={{ display: "flex", marginLeft: "20px" }}>
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: "1",
+                    label: (
+                      <div
+                        onClick={() => {
+                          axios
+                            .get("/spider-gpt/user/logout", {
+                              headers: {
+                                token: accessStore.accessToken,
+                              },
+                            })
+                            .then((res: any) => {
+                              if (res.status == 200) {
+                                message.success("退出成功");
+                                accessStore.update((access) => {
+                                  access.accessCode = "";
+                                  access.accessToken = "";
+                                  access.userInfo = null;
+                                });
+                                config.update((config) => {
+                                  config.isAdmin = false;
+                                });
+                              }
+                            });
+                        }}
+                      >
+                        退出登录
+                      </div>
+                    ),
+                  },
+                ],
+              }}
+            >
+              <Space>
+                {accessStore.userInfo.displayName}
+                <DownOutlined />
+              </Space>
+            </Dropdown>
+          </div>
         </div>
 
         <PromptToast

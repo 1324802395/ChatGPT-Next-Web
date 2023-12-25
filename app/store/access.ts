@@ -14,7 +14,7 @@ let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 const DEFAULT_OPENAI_URL =
   getClientConfig()?.buildMode === "export" ? DEFAULT_API_HOST : ApiPath.OpenAI;
 
-const DEFAULT_ACCESS_STATE = {
+const DEFAULT_ACCESS_STATE: any = {
   accessCode: "",
   useCustomConfig: false,
 
@@ -36,6 +36,8 @@ const DEFAULT_ACCESS_STATE = {
   disableGPT4: false,
   disableFastLink: false,
   customModels: "",
+  accessToken: "",
+  userInfo: null,
 };
 
 export const useAccessStore = createPersistStore(

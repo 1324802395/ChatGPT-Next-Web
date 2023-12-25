@@ -76,6 +76,10 @@ if (mode !== "export") {
         source: "/sharegpt",
         destination: "https://sharegpt.com/api/conversations",
       },
+      {
+        source: "/spider-gpt/:path*",
+        destination: "http://192.168.201.91:8080/spider-gpt/:path*",
+      }
     ];
 
     return {

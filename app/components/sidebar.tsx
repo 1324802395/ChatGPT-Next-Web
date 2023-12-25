@@ -30,6 +30,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { isIOS, useMobileScreen } from "../utils";
 import dynamic from "next/dynamic";
 import { showConfirm, showToast } from "./ui-lib";
+import { message } from "antd";
 
 const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
   loading: () => null,
@@ -135,6 +136,7 @@ export function SideBar(props: { className?: string }) {
   const { onDragStart, shouldNarrow } = useDragSideBar();
   const navigate = useNavigate();
   const config = useAppConfig();
+  const isAdmin = config.isAdmin;
   const isMobileScreen = useMobileScreen();
   const isIOSMobile = useMemo(
     () => isIOS() && isMobileScreen,
@@ -211,22 +213,30 @@ export function SideBar(props: { className?: string }) {
               }}
             />
           </div>
-          <div className={styles["sidebar-action"]}>
-            <Link to={Path.Settings}>
-              <IconButton icon={<SettingsIcon />} shadow />
-            </Link>
-          </div>
-          <div className={styles["sidebar-action"]}>
-            <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-              <IconButton icon={<GithubIcon />} shadow />
-            </a>
-          </div>
+          {isAdmin && (
+            <>
+              <div className={styles["sidebar-action"]}>
+                <Link to={Path.Settings}>
+                  <IconButton icon={<SettingsIcon />} shadow />
+                </Link>
+              </div>
+              <div className={styles["sidebar-action"]}>
+                <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+                  <IconButton icon={<GithubIcon />} shadow />
+                </a>
+              </div>
+            </>
+          )}
         </div>
         <div>
           <IconButton
             icon={<AddIcon />}
             text={shouldNarrow ? undefined : Locale.Home.NewChat}
             onClick={() => {
+              if (chatStore.sessions.length > 9) {
+                message.error("最多添加十个聊天");
+                return;
+              }
               if (config.dontShowMaskSplashScreen) {
                 chatStore.newSession();
                 navigate(Path.Chat);
